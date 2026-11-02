@@ -14,7 +14,11 @@ A small website that connects to your Spotify and gives you links you can paste 
 
 ## Setup
 
-### 1. Host the site (free, GitHub Pages)
+### 1. Host the site
+
+**Vercel (already connected):** this repo is linked to the Vercel project `gmod-radio-linker`, so every push redeploys it automatically. The live site is **https://gmod-radio-linker.vercel.app/**, and that's the Redirect URI to give Spotify.
+
+**Or GitHub Pages (free):**
 
 1. On GitHub open this repo → **Settings → Pages**.
 2. Under "Build and deployment" choose **Deploy from a branch**, pick the branch and `/ (root)`, then click Save.
