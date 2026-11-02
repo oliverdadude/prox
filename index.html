@@ -29,9 +29,23 @@
   </header>
 
   <main>
+    <!-- Internet radio stations: one link that plays non-stop -->
+    <section id="stations" class="card">
+      <h2>📻 Non-stop radio stations</h2>
+      <p class="hint">The car radio only plays direct audio streams (<code>.mp3</code> / <code>.pls</code> / <code>.m3u</code>), not YouTube or Spotify links. Pick a station, hit <b>Copy link</b>, paste it into the radio and press Enter. It keeps playing, no more links needed.</p>
+      <form id="st-form" class="field-row">
+        <input id="st-q" type="search" placeholder="Genre or station name, e.g. hip hop, lofi, rock, BBC…" autocomplete="off">
+        <button class="btn btn-primary">Find</button>
+      </form>
+      <div id="st-chips" class="chips"></div>
+      <div id="st-onair" class="st-onair hidden"></div>
+      <div id="st-list" class="track-list"></div>
+    </section>
+
     <!-- Shown until the user has finished setup -->
     <section id="setup" class="card hidden">
-      <h2>Set up (one time, ~3 minutes)</h2>
+      <h2>Connect Spotify <span class="muted">(optional)</span></h2>
+      <p class="hint">Lets you find stations that match what you are playing, and get YouTube links for radios that take them. Setup takes about 3 minutes:</p>
       <ol class="steps">
         <li>Go to the <a href="https://developer.spotify.com/dashboard" target="_blank" rel="noopener">Spotify Developer Dashboard</a> and click <b>Create app</b>.</li>
         <li>Name it anything (e.g. "GMod Radio"). Tick <b>Web API</b>.</li>
@@ -197,5 +211,6 @@
   </footer>
 
   <script src="app.js"></script>
+  <script src="stations.js"></script>
 </body>
 </html>

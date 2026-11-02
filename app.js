@@ -240,6 +240,7 @@
       name: t.name,
       artists: isEpisode ? (t.show?.name || '') : (t.artists || []).map((a) => a.name).join(', '),
       firstArtist: isEpisode ? (t.show?.name || '') : (t.artists?.[0]?.name || ''),
+      artistIds: isEpisode ? [] : (t.artists || []).map((a) => a.id).filter(Boolean),
       art: images[images.length - 1]?.url || images[0]?.url || '',
       artBig: images[0]?.url || '',
       durationMs: t.duration_ms || 0,
@@ -881,6 +882,13 @@
       stopPolling();
     }
   }
+
+  // shared with stations.js
+  window.GRL = {
+    toast, copyText, api, esc,
+    isLoggedIn: () => !!store.get('token'),
+    nowPlayingTrack: () => nowPlaying?.track || null,
+  };
 
   (async function init() {
     await handleCallback();

@@ -6,6 +6,10 @@ A small website that connects to your Spotify and gives you links you can paste 
 
 ## What it does
 
+- **📻 Non-stop radio stations (for radios that only take `.mp3` / `.pls` / `.m3u` links, like GMod car radios):** search about 50,000 internet radio stations by genre or name, or tap **🎧 Match my Spotify** to find stations in the genre you're listening to. Copy one link, paste it into the radio, and it plays non-stop. You can preview stations in the browser and ★ favorite them. Station data comes from the free [Radio Browser](https://www.radio-browser.info) directory. Spotify isn't needed for this part.
+
+For radios that accept YouTube links:
+
 - **Now playing:** shows what's playing on your Spotify. One click copies the radio link. You get play/pause/skip too, but Spotify only allows those from websites if you have Premium.
 - **Search, playlists, liked songs, recently played:** every song gets a **📋 Copy link** button.
 - **🎯 Pick video:** if the automatic match is wrong, choose another YouTube result or paste your own link. Your choice is saved for that song.
