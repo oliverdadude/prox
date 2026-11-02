@@ -213,3 +213,13 @@ dialog::backdrop { background: rgba(0,0,0,.6); }
 .track .fav-on { color: #f0b429; }
 .track.previewing { background: rgba(29,185,84,.12); }
 .track img:not([src]), .track img[src=""] { visibility: hidden; }
+
+/* Broadcast */
+.bc-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 10px; }
+.guide { margin-top: 16px; border-top: 1px solid var(--border); padding-top: 12px; }
+.guide summary { cursor: pointer; font-weight: 700; }
+.checklist { padding-left: 22px; display: grid; gap: 10px; margin: 12px 0; }
+.checklist label { display: block; cursor: pointer; }
+.checklist input { margin-right: 4px; accent-color: var(--accent); }
+.checklist li.done label { color: var(--muted); }
+.warn { font-size: 13px; color: #f0b429; margin: 10px 0 0; }

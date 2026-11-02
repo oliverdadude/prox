@@ -29,6 +29,39 @@
   </header>
 
   <main>
+    <!-- Your own Spotify broadcast -->
+    <section id="broadcast" class="card">
+      <h2>🎙️ My Spotify broadcast</h2>
+      <p class="hint">Play anything on Spotify and the radio plays it too. Your PC streams Spotify's sound to your own station, and you paste one link into the radio. Set it up once with the checklist below.</p>
+
+      <div class="field-row">
+        <input id="bc-url" type="url" placeholder="Your stream link, e.g. https://stream.zeno.fm/abc123" autocomplete="off" spellcheck="false">
+        <button id="bc-save" class="btn">Save</button>
+      </div>
+      <div class="bc-actions">
+        <button id="bc-copy" class="btn btn-primary" disabled>📋 Copy my station link</button>
+        <button id="bc-test" class="btn" disabled>▶ Test it here</button>
+        <span id="bc-status" class="hint"></span>
+      </div>
+
+      <details id="bc-guide" class="guide">
+        <summary>Setup checklist <span id="bc-progress" class="pill">0/9</span></summary>
+        <p class="warn">Heads-up: Spotify only allows personal listening, so rebroadcasting it to a server breaks their terms of use. That's a risk to your Spotify account.</p>
+        <ol class="checklist" id="bc-steps">
+          <li><label><input type="checkbox"> <b>Install VB-Audio Virtual Cable</b>. Download it from <a href="https://vb-audio.com/Cable/" target="_blank" rel="noopener">vb-audio.com/Cable</a>, unzip it, right-click <code>VBCABLE_Setup_x64.exe</code> → <i>Run as administrator</i> → Install Driver. Then <b>restart your PC</b>.</label></li>
+          <li><label><input type="checkbox"> <b>Install BUTT</b> from <a href="https://danielnoethen.de/butt/" target="_blank" rel="noopener">danielnoethen.de/butt</a> (the Windows installer).</label></li>
+          <li><label><input type="checkbox"> <b>Make a free station</b> at <a href="https://zeno.fm" target="_blank" rel="noopener">zeno.fm</a> (or another Icecast host). Sign up and create a station.</label></li>
+          <li><label><input type="checkbox"> In the station's settings, find the <b>encoder / broadcast details</b> (server, port, mount, password). Keep that tab open.</label></li>
+          <li><label><input type="checkbox"> Copy the station's <b>stream URL</b> and paste it in the box above → <b>Save</b>. It's the audio link, not the web page.</label></li>
+          <li><label><input type="checkbox"> <b>Route Spotify into the cable:</b> play a song in Spotify, open Windows <i>Settings → System → Sound → Volume mixer</i> and set <b>Spotify</b>'s output device to <b>CABLE Input</b>.</label></li>
+          <li><label><input type="checkbox"> <b>BUTT server:</b> <i>Settings → Main → Server → Add</i>. Type <b>Icecast</b>, then fill in address, port, mount and password from step 4. User: <code>source</code>. Save.</label></li>
+          <li><label><input type="checkbox"> <b>BUTT audio:</b> <i>Settings → Audio</i>. Device: <b>CABLE Output</b>, codec <b>MP3</b>, bitrate <b>128k</b>, sample rate <b>44100</b>, channels <b>stereo</b>.</label></li>
+          <li><label><input type="checkbox"> Press <b>▶</b> in BUTT. When it says connected, press <b>▶ Test it here</b> above and you should hear Spotify. Then in GMod: <b>Copy my station link</b> → paste into the radio → Enter.</label></li>
+        </ol>
+        <p class="hint"><b>No sound?</b> Check that the BUTT level meter moves while Spotify plays. If it doesn't, Spotify isn't set to CABLE Input. <b>Echo or game sounds in the stream?</b> BUTT is recording your whole PC, so set its device to CABLE Output. <b>Radio rejects the link?</b> Try it with <code>http://</code> instead of <code>https://</code>. Expect a 5–30 second delay, and keep BUTT and Spotify running.</p>
+      </details>
+    </section>
+
     <!-- Internet radio stations: one link that plays non-stop -->
     <section id="stations" class="card">
       <h2>📻 Non-stop radio stations</h2>
@@ -212,5 +245,6 @@
 
   <script src="app.js"></script>
   <script src="stations.js"></script>
+  <script src="broadcast.js"></script>
 </body>
 </html>
