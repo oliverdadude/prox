@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GMod Radio Linker</title>
+  <meta name="description" content="Connect Spotify and get links you can paste into a Garry's Mod radio.">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📻</text></svg>">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo">📻</span>
+      <div>
+        <h1>GMod Radio Linker</h1>
+        <p class="tagline">Spotify in, radio link out</p>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <div id="user-chip" class="user-chip hidden">
+        <img id="user-avatar" alt="">
+        <span id="user-name"></span>
+      </div>
+      <button id="btn-connect" class="btn btn-primary hidden">Connect Spotify</button>
+      <button id="btn-logout" class="btn btn-ghost hidden" title="Disconnect Spotify">Log out</button>
+      <button id="btn-settings" class="btn btn-ghost icon-btn" title="Settings" aria-label="Settings">⚙️</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- Shown until the user has finished setup -->
+    <section id="setup" class="card hidden">
+      <h2>Set up (one time, ~3 minutes)</h2>
+      <ol class="steps">
+        <li>Go to the <a href="https://developer.spotify.com/dashboard" target="_blank" rel="noopener">Spotify Developer Dashboard</a> and click <b>Create app</b>.</li>
+        <li>Name it anything (e.g. "GMod Radio"). Tick <b>Web API</b>.</li>
+        <li>Under <b>Redirect URIs</b>, paste this exact address and click Add:
+          <div class="copy-row"><code id="redirect-uri"></code><button class="btn btn-small" data-copy-target="redirect-uri">Copy</button></div>
+        </li>
+        <li>Save, then copy the app's <b>Client ID</b> and paste it here:</li>
+      </ol>
+      <div class="field-row">
+        <input id="setup-client-id" type="text" placeholder="Spotify Client ID" autocomplete="off" spellcheck="false">
+        <button id="btn-setup-save" class="btn btn-primary">Save &amp; connect</button>
+      </div>
+      <p class="hint">Optional but recommended: add a free YouTube API key in ⚙️ Settings so the site can find the YouTube link automatically. Without it you get a one-click YouTube search instead.</p>
+    </section>
+
+    <!-- Has a Client ID but not logged in -->
+    <section id="connect-card" class="card hidden">
+      <h2>Connect your Spotify</h2>
+      <p class="hint">You'll be sent to Spotify to log in, then brought back here.</p>
+      <div class="field-row"><button id="btn-connect-2" class="btn btn-primary">Connect Spotify</button></div>
+    </section>
+
+    <!-- Timer for the song you last pasted into the radio -->
+    <section id="radio-timer" class="queue-timer hidden">
+      <div class="qt-label">📻 On the radio: <b id="rt-title"></b></div>
+      <div class="progress"><div id="rt-progress" class="progress-bar"></div></div>
+      <div class="qt-row">
+        <span id="rt-left"></span>
+        <button id="btn-rt-stop" class="btn btn-small btn-ghost">Hide</button>
+      </div>
+      <div class="qt-row">
+        <span id="rt-next"></span>
+        <button id="btn-timer-next" class="btn btn-small btn-primary">Copy next ▶</button>
+      </div>
+    </section>
+
+    <!-- Now playing -->
+    <section id="now-playing" class="card now-playing hidden">
+      <div class="np-art-wrap"><img id="np-art" class="np-art" alt=""></div>
+      <div class="np-body">
+        <div class="label">Now playing on your Spotify</div>
+        <div id="np-title" class="np-title">Nothing playing</div>
+        <div id="np-artist" class="np-artist">Start a song in Spotify and it shows up here.</div>
+        <div class="progress"><div id="np-progress" class="progress-bar"></div></div>
+        <div class="np-time"><span id="np-pos">0:00</span><span id="np-dur">0:00</span></div>
+        <div class="np-controls">
+          <button class="btn btn-round" data-player="previous" title="Previous" aria-label="Previous">⏮</button>
+          <button id="np-playpause" class="btn btn-round btn-round-lg" data-player="toggle" title="Play / pause" aria-label="Play or pause">▶</button>
+          <button class="btn btn-round" data-player="next" title="Next" aria-label="Next">⏭</button>
+        </div>
+        <div id="np-actions" class="track-actions np-actions"></div>
+      </div>
+    </section>
+
+    <!-- Tabs -->
+    <section id="browser" class="card hidden">
+      <nav class="tabs" role="tablist">
+        <button class="tab active" data-tab="search" role="tab">🔎 Search</button>
+        <button class="tab" data-tab="playlists" role="tab">🎵 Playlists</button>
+        <button class="tab" data-tab="recent" role="tab">🕘 Recent</button>
+        <button class="tab" data-tab="queue" role="tab">📻 Radio queue <span id="queue-count" class="pill">0</span></button>
+      </nav>
+
+      <div class="tab-panel" data-panel="search">
+        <form id="search-form" class="field-row">
+          <input id="search-input" type="search" placeholder="Search songs on Spotify…" autocomplete="off">
+          <button class="btn btn-primary">Search</button>
+        </form>
+        <div id="search-results" class="track-list"></div>
+      </div>
+
+      <div class="tab-panel hidden" data-panel="playlists">
+        <div id="playlist-view"></div>
+      </div>
+
+      <div class="tab-panel hidden" data-panel="recent">
+        <div id="recent-list" class="track-list"></div>
+      </div>
+
+      <div class="tab-panel hidden" data-panel="queue">
+        <div class="queue-head">
+          <div>
+            <h3>Radio queue</h3>
+            <p class="hint">Line up songs here. Hit <b>Copy next</b>, paste it into the radio, and the timer tells you when the song is about to end.</p>
+          </div>
+          <div class="queue-buttons">
+            <button id="btn-queue-next" class="btn btn-primary">Copy next ▶</button>
+            <button id="btn-queue-shuffle" class="btn btn-ghost">Shuffle</button>
+            <button id="btn-queue-clear" class="btn btn-ghost">Clear</button>
+          </div>
+        </div>
+        <div id="queue-list" class="track-list"></div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Settings dialog -->
+  <dialog id="settings">
+    <form method="dialog" class="settings-form">
+      <h2>Settings</h2>
+
+      <label>Spotify Client ID
+        <input id="set-client-id" type="text" autocomplete="off" spellcheck="false">
+      </label>
+      <div class="hint">Redirect URI to add in your Spotify app: <code id="redirect-uri-2"></code></div>
+
+      <label>YouTube Data API key <span class="muted">(optional)</span>
+        <input id="set-yt-key" type="password" autocomplete="off" spellcheck="false" placeholder="AIza…">
+      </label>
+      <div class="hint">Lets the site find the YouTube link for you. Get one free at
+        <a href="https://console.cloud.google.com/apis/library/youtube.googleapis.com" target="_blank" rel="noopener">Google Cloud Console</a>
+        → enable "YouTube Data API v3" → Credentials → Create API key. About 100 song lookups a day for free; links are cached so repeats are free.</div>
+
+      <label>Link type to copy
+        <select id="set-link-type">
+          <option value="youtube">YouTube (youtube.com/watch?v=…)</option>
+          <option value="youtu.be">YouTube short (youtu.be/…)</option>
+          <option value="spotify">Spotify link (only if your radio supports it)</option>
+        </select>
+      </label>
+
+      <label>Search YouTube for
+        <select id="set-yt-suffix">
+          <option value="audio">"Artist - Song audio" (best for radios)</option>
+          <option value="lyrics">"Artist - Song lyrics"</option>
+          <option value="">"Artist - Song" (could be the music video)</option>
+        </select>
+      </label>
+
+      <label class="check"><input id="set-notify" type="checkbox"> Beep when the radio song is nearly over (queue timer)</label>
+
+      <div class="settings-actions">
+        <button id="btn-clear-cache" type="button" class="btn btn-ghost">Clear saved links</button>
+        <span class="spacer"></span>
+        <button value="cancel" class="btn btn-ghost">Cancel</button>
+        <button id="btn-settings-save" value="save" class="btn btn-primary">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Choose-a-link dialog -->
+  <dialog id="picker">
+    <div class="picker">
+      <h2>Pick the right video</h2>
+      <p id="picker-for" class="hint"></p>
+      <div id="picker-list" class="picker-list"></div>
+      <div class="field-row">
+        <input id="picker-custom" type="url" placeholder="…or paste any link to use for this song">
+        <button id="btn-picker-custom" class="btn">Use this</button>
+      </div>
+      <div class="settings-actions">
+        <a id="picker-yt-search" class="btn btn-ghost" target="_blank" rel="noopener">Search on YouTube ↗</a>
+        <span class="spacer"></span>
+        <button id="btn-picker-close" class="btn btn-ghost">Close</button>
+      </div>
+    </div>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <footer class="foot">
+    Everything runs in your browser. Your Spotify login and keys are stored only on this device.
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
