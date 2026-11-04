@@ -14,6 +14,24 @@
           "value": "strict-origin-when-cross-origin"
         }
       ]
+    },
+    {
+      "source": "/(.*)\\.pls",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "audio/x-scpls"
+        }
+      ]
+    },
+    {
+      "source": "/(.*)\\.m3u",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "audio/x-mpegurl"
+        }
+      ]
     }
   ],
   "rewrites": [
