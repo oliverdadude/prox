@@ -223,3 +223,21 @@ dialog::backdrop { background: rgba(0,0,0,.6); }
 .checklist input { margin-right: 4px; accent-color: var(--accent); }
 .checklist li.done label { color: var(--muted); }
 .warn { font-size: 13px; color: #f0b429; margin: 10px 0 0; }
+
+/* Uploads */
+.dropzone {
+  margin-top: 12px; display: grid; justify-items: center; gap: 4px; text-align: center;
+  border: 2px dashed var(--border); border-radius: 12px; padding: 22px 12px; cursor: pointer;
+  transition: border-color .15s, background .15s;
+}
+.dropzone:hover, .dropzone.over { border-color: var(--accent); background: rgba(29,185,84,.06); }
+.dz-icon { font-size: 26px; }
+.up-progress { display: grid; gap: 8px; margin-top: 10px; }
+.up-item { font-size: 13px; }
+.up-item .row { display: flex; justify-content: space-between; gap: 8px; }
+.up-item .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.up-item.err { color: var(--danger); }
+.up-head { display: flex; align-items: center; justify-content: space-between; margin-top: 16px; }
+.up-head h3 { margin: 0; font-size: 16px; }
+.mp3-icon { width: 44px; height: 44px; border-radius: 6px; background: var(--panel-2); display: grid; place-items: center; font-size: 20px; }
+@media (max-width: 640px) { .mp3-icon { width: 40px; height: 40px; } }

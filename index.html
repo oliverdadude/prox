@@ -62,6 +62,32 @@
       </details>
     </section>
 
+    <!-- Upload your own mp3s and get a direct link -->
+    <section id="uploads" class="card">
+      <h2>🎵 My mp3 links</h2>
+      <p class="hint">Upload an mp3 and get a direct <code>.mp3</code> link the car radio can play. Only upload music you're allowed to share, like songs you made or bought DRM-free (e.g. Bandcamp) or royalty-free tracks.</p>
+
+      <div id="up-locked" class="field-row">
+        <input id="up-pass" type="password" placeholder="Upload password" autocomplete="current-password">
+        <button id="up-unlock" class="btn btn-primary">Unlock</button>
+      </div>
+
+      <div id="up-unlocked" class="hidden">
+        <label id="up-drop" class="dropzone">
+          <input id="up-file" type="file" accept=".mp3,audio/mpeg" multiple hidden>
+          <span class="dz-icon">⬆️</span>
+          <span><b>Click to choose mp3s</b> or drag them here</span>
+          <span class="hint">Up to 50 MB each</span>
+        </label>
+        <div id="up-progress" class="up-progress"></div>
+        <div class="up-head">
+          <h3>Your songs <span id="up-count" class="pill">0</span></h3>
+          <button id="up-lock" class="btn btn-small btn-ghost">Lock</button>
+        </div>
+        <div id="up-list" class="track-list"></div>
+      </div>
+    </section>
+
     <!-- Internet radio stations: one link that plays non-stop -->
     <section id="stations" class="card">
       <h2>📻 Non-stop radio stations</h2>
@@ -246,5 +272,6 @@
   <script src="app.js"></script>
   <script src="stations.js"></script>
   <script src="broadcast.js"></script>
+  <script type="module" src="uploads.js"></script>
 </body>
 </html>
