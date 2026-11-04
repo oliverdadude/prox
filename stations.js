@@ -149,7 +149,8 @@
 
   // ---------- actions ----------
   async function copyStation(st) {
-    const link = radioLink(st.url_resolved || st.url);
+    let link;
+    try { link = await radioLink(st.url_resolved || st.url); } catch (e) { toast(e.message, true); return; }
     if (await copyText(link)) toast('Copied! Paste it into the radio and press Enter 📻');
     else window.prompt('Copy this link:', link);
     onAir = { name: st.name.trim(), link };

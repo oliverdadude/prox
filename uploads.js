@@ -1,7 +1,7 @@
 /* Upload mp3s to Vercel Blob and get direct links the GMod car radio can play. */
 import { upload } from './vendor/blob-client.js';
 
-const { toast, copyText, esc } = window.GRL;
+const { toast, copyText, esc, radioLink } = window.GRL;
 const $ = (s) => document.querySelector(s);
 const get = (k, d) => { try { const v = localStorage.getItem(`grl.up.${k}`); return v == null ? d : JSON.parse(v); } catch { return d; } };
 const set = (k, v) => { try { if (v == null) localStorage.removeItem(`grl.up.${k}`); else localStorage.setItem(`grl.up.${k}`, JSON.stringify(v)); } catch { /* ignore */ } };
@@ -52,7 +52,6 @@ function render() {
       </div>
       <div class="track-actions">
         <button class="btn btn-small btn-primary" data-up="copy" data-url="${esc(f.url)}">📋 Copy link</button>
-        <button class="btn btn-small" data-up="dl" data-url="${esc(f.url)}" title="Copy a link that downloads the file instead of playing it in the browser">⬇ Download link</button>
         <button class="btn btn-small" data-up="play" data-url="${esc(f.url)}" title="Listen">${playing === f.url ? '⏹' : '▶'}</button>
         <button class="btn btn-small" data-up="del" data-url="${esc(f.url)}" title="Delete">🗑</button>
       </div>
@@ -109,8 +108,9 @@ async function uploadFiles(list) {
           row.querySelector('.progress-bar').style.width = `${percentage}%`;
         },
       });
+      const link = await radioLink(blob.url);
       row.querySelector('.pct').textContent = '✔ Done, link copied';
-      await copyText(blob.url);
+      await copyText(link);
       setTimeout(() => row.remove(), 4000);
     } catch (e) {
       row.classList.add('err');
@@ -133,12 +133,9 @@ $('#up-list').addEventListener('click', async (e) => {
   if (!b) return;
   const url = b.dataset.url;
   if (b.dataset.up === 'copy') {
-    if (await copyText(url)) toast('Copied! Paste it into the radio and press Enter 📻');
-    else window.prompt('Copy this link:', url);
-  } else if (b.dataset.up === 'dl') {
-    const id = btoa(url).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-    const link = `${location.origin}/d/${id}.mp3`;
-    if (await copyText(link)) toast('Download link copied. Try this one in the radio 📻');
+    let link;
+    try { link = await radioLink(url); } catch (err) { toast(err.message, true); return; }
+    if (await copyText(link)) toast('Copied! Paste it into the radio and press Enter 📻');
     else window.prompt('Copy this link:', link);
   } else if (b.dataset.up === 'play') {
     if (playing === url) { audio.pause(); playing = null; } else {

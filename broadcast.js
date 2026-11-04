@@ -32,7 +32,8 @@
   $('#bc-url').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); $('#bc-save').click(); } });
 
   $('#bc-copy').addEventListener('click', async () => {
-    const link = radioLink(url);
+    let link;
+    try { link = await radioLink(url); } catch (e) { toast(e.message, true); return; }
     if (await copyText(link)) toast('Copied! Paste it into the radio and press Enter 📻');
     else window.prompt('Copy this link:', link);
   });

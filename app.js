@@ -884,15 +884,19 @@
   }
 
   // shared with stations.js
-  // Radios like the GMod car radio only accept links ending in .mp3/.pls/.m3u.
-  // Stream links often don't (e.g. https://stream.zeno.fm/abc), so wrap them
-  // in a tiny .m3u playlist served by /api/stream.
-  function radioLink(url) {
-    const path = (() => { try { return new URL(url).pathname.toLowerCase(); } catch { return ''; } })();
-    if (/\.(mp3|pls|m3u)$/.test(path)) return url;
-    const id = btoa(String.fromCharCode(...new TextEncoder().encode(url)))
-      .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-    return `${location.origin}/s/${id}.m3u`;
+  // The GMod car radio rejects long links, so every link we hand out is a
+  // short /p/<id>.pls playlist on this site that points at the real audio.
+  const shortCache = store.get('shortLinks', {});
+  async function radioLink(url) {
+    if (shortCache[url]) return shortCache[url];
+    const res = await fetch('/api/short', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.link) throw new Error(data.error || "Couldn't make a short link, try again.");
+    shortCache[url] = data.link;
+    store.set('shortLinks', shortCache);
+    return data.link;
   }
 
   window.GRL = {
