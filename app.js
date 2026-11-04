@@ -886,7 +886,7 @@
   // shared with stations.js
   // The GMod car radio rejects long links, so every link we hand out is a
   // short /p/<id>.pls playlist on this site that points at the real audio.
-  const shortCache = store.get('shortLinks', {});
+  const shortCache = store.get('shortLinks2', {});
   async function radioLink(url) {
     if (shortCache[url]) return shortCache[url];
     const res = await fetch('/api/short', {
@@ -895,7 +895,7 @@
     const data = await res.json().catch(() => ({}));
     if (!res.ok || !data.link) throw new Error(data.error || "Couldn't make a short link, try again.");
     shortCache[url] = data.link;
-    store.set('shortLinks', shortCache);
+    store.set('shortLinks2', shortCache);
     return data.link;
   }
 

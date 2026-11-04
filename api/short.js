@@ -38,5 +38,7 @@ async function shorten(request, url) {
     access: 'public', addRandomSuffix: false, allowOverwrite: true, contentType: 'text/plain; charset=utf-8',
   });
   const origin = new URL(request.url).origin;
-  return json({ link: `${origin}/p/${id}.pls`, id });
+  // Single mp3 files get an .mp3 link (redirects to the file); streams get a .pls playlist.
+  const ext = /\.mp3$/i.test(new URL(url).pathname) ? 'mp3' : 'pls';
+  return json({ link: `${origin}/p/${id}.${ext}`, id });
 }

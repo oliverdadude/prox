@@ -49,7 +49,11 @@
     },
     {
       "source": "/p/:id.pls",
-      "destination": "/api/p?id=:id"
+      "destination": "/api/p?id=:id&fmt=pls"
+    },
+    {
+      "source": "/p/:id.mp3",
+      "destination": "/api/p?id=:id&fmt=mp3"
     }
   ]
 }
