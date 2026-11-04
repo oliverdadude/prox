@@ -4,7 +4,7 @@
  */
 (() => {
   'use strict';
-  const { toast, copyText, api, esc, isLoggedIn, nowPlayingTrack } = window.GRL;
+  const { toast, copyText, api, esc, isLoggedIn, nowPlayingTrack, radioLink } = window.GRL;
   const $ = (sel) => document.querySelector(sel);
 
   const store = {
@@ -149,7 +149,7 @@
 
   // ---------- actions ----------
   async function copyStation(st) {
-    const link = st.url_resolved || st.url;
+    const link = radioLink(st.url_resolved || st.url);
     if (await copyText(link)) toast('Copied! Paste it into the radio and press Enter 📻');
     else window.prompt('Copy this link:', link);
     onAir = { name: st.name.trim(), link };

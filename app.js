@@ -884,8 +884,19 @@
   }
 
   // shared with stations.js
+  // Radios like the GMod car radio only accept links ending in .mp3/.pls/.m3u.
+  // Stream links often don't (e.g. https://stream.zeno.fm/abc), so wrap them
+  // in a tiny .m3u playlist served by /api/stream.
+  function radioLink(url) {
+    const path = (() => { try { return new URL(url).pathname.toLowerCase(); } catch { return ''; } })();
+    if (/\.(mp3|pls|m3u)$/.test(path)) return url;
+    const id = btoa(String.fromCharCode(...new TextEncoder().encode(url)))
+      .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    return `${location.origin}/s/${id}.m3u`;
+  }
+
   window.GRL = {
-    toast, copyText, api, esc,
+    toast, copyText, api, esc, radioLink,
     isLoggedIn: () => !!store.get('token'),
     nowPlayingTrack: () => nowPlaying?.track || null,
   };

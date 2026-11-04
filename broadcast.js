@@ -2,7 +2,7 @@
  * and walks you through the one-time setup. */
 (() => {
   'use strict';
-  const { toast, copyText } = window.GRL;
+  const { toast, copyText, radioLink } = window.GRL;
   const $ = (s) => document.querySelector(s);
   const get = (k, d) => { try { const v = localStorage.getItem(`grl.bc.${k}`); return v == null ? d : JSON.parse(v); } catch { return d; } };
   const set = (k, v) => { try { localStorage.setItem(`grl.bc.${k}`, JSON.stringify(v)); } catch { /* ignore */ } };
@@ -32,8 +32,9 @@
   $('#bc-url').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); $('#bc-save').click(); } });
 
   $('#bc-copy').addEventListener('click', async () => {
-    if (await copyText(url)) toast('Copied! Paste it into the radio and press Enter 📻');
-    else window.prompt('Copy this link:', url);
+    const link = radioLink(url);
+    if (await copyText(link)) toast('Copied! Paste it into the radio and press Enter 📻');
+    else window.prompt('Copy this link:', link);
   });
 
   $('#bc-test').addEventListener('click', async () => {
