@@ -8,6 +8,8 @@ A small website that connects to your Spotify and gives you links you can paste 
 
 - **📻 Non-stop radio stations (for radios that only take `.mp3` / `.pls` / `.m3u` links, like GMod car radios):** search about 50,000 internet radio stations by genre or name, or tap **🎧 Match my Spotify** to find stations in the genre you're listening to. Copy one link, paste it into the radio, and it plays non-stop. You can preview stations in the browser and ★ favorite them. Station data comes from the free [Radio Browser](https://www.radio-browser.info) directory. Spotify isn't needed for this part.
 
+- **🎵 My mp3 links:** upload an mp3 (up to 50 MB) and get a direct `.mp3` link for the radio. Files are stored in Vercel Blob (store `gmod-radio-mp3s`). Uploading, listing and deleting need the upload password, which lives in the Vercel env var `UPLOAD_PASSWORD`; change it there whenever you like. Only upload music you're allowed to share.
+
 For radios that accept YouTube links:
 
 - **Now playing:** shows what's playing on your Spotify. One click copies the radio link. You get play/pause/skip too, but Spotify only allows those from websites if you have Premium.
