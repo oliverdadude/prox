@@ -24,6 +24,10 @@
   $('#bc-save').addEventListener('click', () => {
     const v = $('#bc-url').value.trim();
     if (v && !/^https?:\/\/\S+$/i.test(v)) { toast('Paste the full link starting with https:// or http://', true); return; }
+    if (/(youtube\.com|youtu\.be|spotify\.com|soundcloud\.com)/i.test(v)) {
+      toast("That's a YouTube/Spotify page, not a stream. Paste your station's stream URL (e.g. from Zeno.fm).", true);
+      return;
+    }
     if (/zeno\.fm\/(radio|podcast)\//i.test(v)) toast("That looks like the station's web page. Use the stream URL from its settings.", true);
     url = v; set('url', url); stopTest();
     $('#bc-status').textContent = '';

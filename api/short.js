@@ -33,6 +33,10 @@ async function shorten(request, url) {
   } catch {
     return json({ error: 'Not a valid audio link' }, 400);
   }
+  const host = new URL(url).hostname.replace(/^www\.|^m\.|^music\./, '');
+  if (/^(youtube\.com|youtu\.be|spotify\.com|open\.spotify\.com|soundcloud\.com)$/.test(host)) {
+    return json({ error: "That's a YouTube/Spotify/SoundCloud page, not an audio file. The car radio can only play radio stations, your broadcast, or uploaded mp3s." }, 400);
+  }
   const id = shortId(url);
   await put(`links/${id}.txt`, url, {
     access: 'public', addRandomSuffix: false, allowOverwrite: true, contentType: 'text/plain; charset=utf-8',
