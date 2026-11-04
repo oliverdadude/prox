@@ -24,6 +24,10 @@
     {
       "source": "/s/:id.pls",
       "destination": "/api/stream?id=:id&fmt=pls"
+    },
+    {
+      "source": "/d/:id.mp3",
+      "destination": "/api/dl?id=:id"
     }
   ]
 }

@@ -52,6 +52,7 @@ function render() {
       </div>
       <div class="track-actions">
         <button class="btn btn-small btn-primary" data-up="copy" data-url="${esc(f.url)}">📋 Copy link</button>
+        <button class="btn btn-small" data-up="dl" data-url="${esc(f.url)}" title="Copy a link that downloads the file instead of playing it in the browser">⬇ Download link</button>
         <button class="btn btn-small" data-up="play" data-url="${esc(f.url)}" title="Listen">${playing === f.url ? '⏹' : '▶'}</button>
         <button class="btn btn-small" data-up="del" data-url="${esc(f.url)}" title="Delete">🗑</button>
       </div>
@@ -134,6 +135,11 @@ $('#up-list').addEventListener('click', async (e) => {
   if (b.dataset.up === 'copy') {
     if (await copyText(url)) toast('Copied! Paste it into the radio and press Enter 📻');
     else window.prompt('Copy this link:', url);
+  } else if (b.dataset.up === 'dl') {
+    const id = btoa(url).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    const link = `${location.origin}/d/${id}.mp3`;
+    if (await copyText(link)) toast('Download link copied. Try this one in the radio 📻');
+    else window.prompt('Copy this link:', link);
   } else if (b.dataset.up === 'play') {
     if (playing === url) { audio.pause(); playing = null; } else {
       audio.src = url; playing = url;
