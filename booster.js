@@ -15,8 +15,27 @@ const gainValue = () => Number($('#bo-gain').value) / 100;
 const bassDb = () => Number($('#bo-bass').value);
 const bassHz = () => Number($('#bo-freq').value);
 
-// bass (low-shelf EQ) -> gain -> (limiter) -> destination; shared by live preview and export
-function buildChain(ac, input) {
+// Soft clipper: untouched below KNEE, then peaks round off smoothly towards 1.0
+// instead of being chopped flat. The shaper only sees input in [-1, 1], so the
+// signal is scaled down by HEADROOM first and the curve undoes that scaling.
+const HEADROOM = 8;
+const KNEE = 0.7;
+let softCurve;
+function softClipCurve() {
+  if (softCurve) return softCurve;
+  const n = 16384;
+  softCurve = new Float32Array(n);
+  for (let i = 0; i < n; i++) {
+    const s = ((i / (n - 1)) * 2 - 1) * HEADROOM;   // real signal level
+    const a = Math.abs(s);
+    const y = a <= KNEE ? a : KNEE + (1 - KNEE) * Math.tanh((a - KNEE) / (1 - KNEE));
+    softCurve[i] = Math.sign(s) * y;
+  }
+  return softCurve;
+}
+
+// bass (low-shelf EQ) -> gain -> (soft clip) -> [analyser] -> destination
+function buildChain(ac, input, withMeter = false) {
   const bass = ac.createBiquadFilter();
   bass.type = 'lowshelf';
   bass.frequency.value = bassHz();
@@ -27,17 +46,36 @@ function buildChain(ac, input) {
   bass.connect(gain);
   let out = gain;
   if ($('#bo-limit').checked) {
-    const lim = ac.createDynamicsCompressor();
-    lim.threshold.value = -2;
-    lim.knee.value = 0;
-    lim.ratio.value = 20;
-    lim.attack.value = 0.002;
-    lim.release.value = 0.08;
-    gain.connect(lim);
-    out = lim;
+    const pre = ac.createGain();
+    pre.gain.value = 1 / HEADROOM;
+    const shaper = ac.createWaveShaper();
+    shaper.curve = softClipCurve();
+    shaper.oversample = '4x';
+    gain.connect(pre);
+    pre.connect(shaper);
+    out = shaper;
+  }
+  let analyser = null;
+  if (withMeter) {
+    analyser = ac.createAnalyser();
+    analyser.fftSize = 2048;
+    out.connect(analyser);
   }
   out.connect(ac.destination);
-  return { gain, bass };
+  return { gain, bass, analyser };
+}
+
+// live output meter (peak) while previewing
+const meterBuf = new Float32Array(2048);
+function meterLoop() {
+  if (!live?.analyser) { $('#bo-meter-bar').style.width = '0'; return; }
+  live.analyser.getFloatTimeDomainData(meterBuf);
+  let peak = 0;
+  for (const v of meterBuf) peak = Math.max(peak, Math.abs(v));
+  const bar = $('#bo-meter-bar');
+  bar.style.width = `${Math.min(100, peak * 100)}%`;
+  bar.classList.toggle('clip', peak >= 0.99);
+  requestAnimationFrame(meterLoop);
 }
 
 function setStatus(t) { $('#bo-status').textContent = t; }
@@ -66,7 +104,9 @@ async function loadAudio(getBytes, name) {
 }
 
 // ---------- live preview ----------
-function stopPreview() {
+let previewFrom = 0;
+function stopPreview(keepPosition = false) {
+  previewFrom = keepPosition && live ? (ctx.currentTime - live.startedAt) % decoded.duration : 0;
   if (live) { try { live.src.stop(); } catch { /* already stopped */ } live = null; }
   $('#bo-preview').textContent = '▶ Preview';
 }
@@ -76,10 +116,11 @@ async function startPreview() {
   await ctx.resume();
   const src = ctx.createBufferSource();
   src.buffer = decoded;
-  const nodes = buildChain(ctx, src);
+  const nodes = buildChain(ctx, src, true);
   src.onended = () => { if (live?.src === src) stopPreview(); };
-  src.start();
-  live = { src, ...nodes };
+  src.start(0, previewFrom);
+  live = { src, ...nodes, startedAt: ctx.currentTime - previewFrom };
+  requestAnimationFrame(meterLoop);
   $('#bo-preview').textContent = '⏹ Stop';
 }
 
@@ -101,7 +142,7 @@ $('#bo-freq').addEventListener('input', () => {
   if (live) live.bass.frequency.setTargetAtTime(bassHz(), ctx.currentTime, 0.02);
 });
 // limiter on/off rebuilds the chain, so restart the preview
-$('#bo-limit').addEventListener('change', () => { if (live) { stopPreview(); startPreview(); } });
+$('#bo-limit').addEventListener('change', () => { if (live) { stopPreview(true); startPreview(); } });
 
 // ---------- export ----------
 async function renderMp3() {

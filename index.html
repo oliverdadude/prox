@@ -91,7 +91,7 @@
     <!-- Volume booster -->
     <section id="booster" class="card">
       <h2>🔊 Volume &amp; bass booster</h2>
-      <p class="hint">Make an mp3 louder (up to 500%) and add bass (up to +24 dB). Preview it, then download it or upload it to get a radio link. Above about 200% it starts to distort. The limiter keeps it loud with less crackling.</p>
+      <p class="hint">Make an mp3 louder (up to 500%) and add bass (up to +24 dB). Preview it, then download it or upload it to get a radio link. Above about 200% it starts to distort. Soft clip keeps it loud with less harsh crackling.</p>
       <label class="dropzone" id="bo-drop">
         <input id="bo-file" type="file" accept="audio/*,.mp3" hidden>
         <span class="dz-icon">🎚️</span>
@@ -116,7 +116,8 @@
           <input id="bo-freq" type="range" min="40" max="250" step="10" value="100">
           <output id="bo-freq-out">100 Hz</output>
         </div>
-        <label class="check"><input id="bo-limit" type="checkbox" checked> Limiter (less crackling)</label>
+        <label class="check"><input id="bo-limit" type="checkbox" checked> Soft clip (smoother distortion when boosted)</label>
+        <div class="bo-meter" title="Output level while previewing"><div id="bo-meter-bar"></div></div>
         <div class="bc-actions">
           <button id="bo-preview" class="btn">▶ Preview</button>
           <button id="bo-download" class="btn btn-primary">⬇ Download boosted mp3</button>
