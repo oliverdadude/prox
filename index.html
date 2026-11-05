@@ -90,8 +90,8 @@
 
     <!-- Volume booster -->
     <section id="booster" class="card">
-      <h2>🔊 Volume booster</h2>
-      <p class="hint">Make an mp3 louder, up to 500%. Preview it, then download it or upload it to get a radio link. Above about 200% it starts to distort. The limiter keeps it loud with less crackling.</p>
+      <h2>🔊 Volume &amp; bass booster</h2>
+      <p class="hint">Make an mp3 louder (up to 500%) and add bass (up to +24 dB). Preview it, then download it or upload it to get a radio link. Above about 200% it starts to distort. The limiter keeps it loud with less crackling.</p>
       <label class="dropzone" id="bo-drop">
         <input id="bo-file" type="file" accept="audio/*,.mp3" hidden>
         <span class="dz-icon">🎚️</span>
@@ -105,6 +105,16 @@
           <label for="bo-gain">Boost</label>
           <input id="bo-gain" type="range" min="100" max="500" step="10" value="200">
           <output id="bo-gain-out">200%</output>
+        </div>
+        <div class="bo-slider-row" id="bo-bass-row">
+          <label for="bo-bass">Bass</label>
+          <input id="bo-bass" type="range" min="0" max="24" step="1" value="0">
+          <output id="bo-bass-out">+0 dB</output>
+        </div>
+        <div class="bo-slider-row">
+          <label for="bo-freq">Bass up to</label>
+          <input id="bo-freq" type="range" min="40" max="250" step="10" value="100">
+          <output id="bo-freq-out">100 Hz</output>
         </div>
         <label class="check"><input id="bo-limit" type="checkbox" checked> Limiter (less crackling)</label>
         <div class="bc-actions">

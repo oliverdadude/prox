@@ -12,12 +12,19 @@ let ctx = null;         // live preview context
 let live = null;        // { src, gain }
 
 const gainValue = () => Number($('#bo-gain').value) / 100;
+const bassDb = () => Number($('#bo-bass').value);
+const bassHz = () => Number($('#bo-freq').value);
 
-// gain -> (limiter) -> destination; shared by live preview and export
+// bass (low-shelf EQ) -> gain -> (limiter) -> destination; shared by live preview and export
 function buildChain(ac, input) {
+  const bass = ac.createBiquadFilter();
+  bass.type = 'lowshelf';
+  bass.frequency.value = bassHz();
+  bass.gain.value = bassDb();
   const gain = ac.createGain();
   gain.gain.value = gainValue();
-  input.connect(gain);
+  input.connect(bass);
+  bass.connect(gain);
   let out = gain;
   if ($('#bo-limit').checked) {
     const lim = ac.createDynamicsCompressor();
@@ -30,7 +37,7 @@ function buildChain(ac, input) {
     out = lim;
   }
   out.connect(ac.destination);
-  return gain;
+  return { gain, bass };
 }
 
 function setStatus(t) { $('#bo-status').textContent = t; }
@@ -69,10 +76,10 @@ async function startPreview() {
   await ctx.resume();
   const src = ctx.createBufferSource();
   src.buffer = decoded;
-  const gain = buildChain(ctx, src);
+  const nodes = buildChain(ctx, src);
   src.onended = () => { if (live?.src === src) stopPreview(); };
   src.start();
-  live = { src, gain };
+  live = { src, ...nodes };
   $('#bo-preview').textContent = '⏹ Stop';
 }
 
@@ -81,8 +88,17 @@ $('#bo-preview').addEventListener('click', () => (live ? stopPreview() : startPr
 $('#bo-gain').addEventListener('input', () => {
   const v = gainValue();
   $('#bo-gain-out').textContent = `${Math.round(v * 100)}%`;
-  $('.bo-slider-row').classList.toggle('bo-hot', v > 2);
+  $('#bo-gain').closest('.bo-slider-row').classList.toggle('bo-hot', v > 2);
   if (live) live.gain.gain.setTargetAtTime(v, ctx.currentTime, 0.02);
+});
+$('#bo-bass').addEventListener('input', () => {
+  $('#bo-bass-out').textContent = `+${bassDb()} dB`;
+  $('#bo-bass-row').classList.toggle('bo-hot', bassDb() > 12);
+  if (live) live.bass.gain.setTargetAtTime(bassDb(), ctx.currentTime, 0.02);
+});
+$('#bo-freq').addEventListener('input', () => {
+  $('#bo-freq-out').textContent = `${bassHz()} Hz`;
+  if (live) live.bass.frequency.setTargetAtTime(bassHz(), ctx.currentTime, 0.02);
 });
 // limiter on/off rebuilds the chain, so restart the preview
 $('#bo-limit').addEventListener('change', () => { if (live) { stopPreview(); startPreview(); } });
@@ -122,7 +138,8 @@ async function renderMp3() {
   }
   parts.push(enc.flush());
   const pct = Math.round(gainValue() * 100);
-  return new File(parts, `${fileName || 'song'} (boost ${pct}%).mp3`, { type: 'audio/mpeg' });
+  const tag = [pct !== 100 ? `boost ${pct}%` : '', bassDb() ? `bass +${bassDb()}dB` : ''].filter(Boolean).join(', ') || 'copy';
+  return new File(parts, `${fileName || 'song'} (${tag}).mp3`, { type: 'audio/mpeg' });
 }
 
 async function withBusy(btn, fn) {
