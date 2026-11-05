@@ -42,6 +42,9 @@ async function refresh() {
 }
 
 function render() {
+  // let the volume booster offer these songs too
+  window.GRL.uploadedSongs = files.map((f) => ({ url: f.url, name: prettyName(f.pathname) }));
+  window.dispatchEvent(new CustomEvent('grl:uploads', { detail: window.GRL.uploadedSongs }));
   $('#up-count').textContent = files.length;
   $('#up-list').innerHTML = files.length ? files.map((f) => `
     <div class="track ${playing === f.url ? 'previewing' : ''}">
@@ -52,6 +55,7 @@ function render() {
       </div>
       <div class="track-actions">
         <button class="btn btn-small btn-primary" data-up="copy" data-url="${esc(f.url)}">📋 Copy link</button>
+        <button class="btn btn-small" data-up="boost" data-url="${esc(f.url)}" data-name="${esc(prettyName(f.pathname))}" title="Open in the volume booster">🔊</button>
         <button class="btn btn-small" data-up="play" data-url="${esc(f.url)}" title="Listen">${playing === f.url ? '⏹' : '▶'}</button>
         <button class="btn btn-small" data-up="del" data-url="${esc(f.url)}" title="Delete">🗑</button>
       </div>
@@ -60,6 +64,8 @@ function render() {
 
 function lock() {
   password = ''; set('pass', null); files = [];
+  window.GRL.uploadedSongs = [];
+  window.dispatchEvent(new CustomEvent('grl:uploads', { detail: [] }));
   audio.pause(); playing = null;
   $('#up-pass').value = '';
   showLocked(true);
@@ -137,6 +143,8 @@ $('#up-list').addEventListener('click', async (e) => {
     try { link = await radioLink(url); } catch (err) { toast(err.message, true); return; }
     if (await copyText(link)) toast('Copied! Paste it into the radio and press Enter 📻');
     else window.prompt('Copy this link:', link);
+  } else if (b.dataset.up === 'boost') {
+    window.GRL.boostUrl?.(url, b.dataset.name);
   } else if (b.dataset.up === 'play') {
     if (playing === url) { audio.pause(); playing = null; } else {
       audio.src = url; playing = url;

@@ -37,13 +37,18 @@ function setStatus(t) { $('#bo-status').textContent = t; }
 
 async function loadFile(file) {
   if (!file) return;
+  $('#bo-pick').value = '';
+  await loadAudio(() => file.arrayBuffer(), file.name);
+}
+
+async function loadAudio(getBytes, name) {
   stopPreview();
   setStatus('Loading…');
   try {
     ctx ??= new AudioContext();
-    decoded = await ctx.decodeAudioData(await file.arrayBuffer());
-    fileName = file.name.replace(/\.[^.]+$/, '');
-    $('#bo-name').innerHTML = `<b>${window.GRL.esc(file.name)}</b> · ${Math.round(decoded.duration)}s · click to change`;
+    decoded = await ctx.decodeAudioData(await getBytes());
+    fileName = name.replace(/\.(mp3|wav|ogg|m4a|flac)$/i, '');
+    $('#bo-name').innerHTML = `<b>${window.GRL.esc(name)}</b> · ${Math.round(decoded.duration)}s · click to change`;
     $('#bo-controls').classList.remove('hidden');
     setStatus('');
   } catch {
@@ -150,6 +155,37 @@ $('#bo-upload').addEventListener('click', (e) => withBusy(e.currentTarget, async
   setStatus(ok ? `✔ Uploaded, link copied: ${link}` : `✔ Uploaded: ${link}`);
   toast(ok ? 'Boosted song uploaded, link copied 📻' : 'Uploaded');
 }));
+
+// ---------- your uploaded songs ----------
+async function loadUrl(url, name) {
+  await loadAudio(async () => {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error();
+    return res.arrayBuffer();
+  }, name || 'song');
+}
+
+window.GRL.boostUrl = (url, name) => {
+  $('#bo-pick').value = url;
+  document.getElementById('booster').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  loadUrl(url, name);
+};
+
+function fillPicker(songs) {
+  const pick = $('#bo-pick');
+  const current = pick.value;
+  pick.innerHTML = '<option value="">…or pick one of your uploaded songs</option>'
+    + songs.map((f) => `<option value="${window.GRL.esc(f.url)}">${window.GRL.esc(f.name)}</option>`).join('');
+  if (songs.some((f) => f.url === current)) pick.value = current;
+  $('#bo-pick-row').classList.toggle('hidden', !songs.length);
+}
+window.addEventListener('grl:uploads', (e) => fillPicker(e.detail || []));
+fillPicker(window.GRL.uploadedSongs || []);
+
+$('#bo-pick').addEventListener('change', (e) => {
+  const opt = e.target.selectedOptions[0];
+  if (e.target.value) loadUrl(e.target.value, opt.textContent);
+});
 
 // ---------- file picking ----------
 $('#bo-file').addEventListener('change', (e) => { loadFile(e.target.files[0]); e.target.value = ''; });
