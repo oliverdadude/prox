@@ -150,5 +150,17 @@ $('#up-list').addEventListener('click', async (e) => {
 });
 audio.addEventListener('ended', () => { playing = null; render(); });
 
+// used by booster.js: upload a File and get the radio link back
+window.GRL.uploadMp3 = async (file, onProgress) => {
+  if (!password) throw new Error('Unlock "My mp3 links" with the upload password first.');
+  const blob = await upload(safeName(file.name), file, {
+    access: 'public', handleUploadUrl: '/api/upload', clientPayload: JSON.stringify({ password }),
+    contentType: 'audio/mpeg', multipart: file.size > 8 * 1024 * 1024,
+    onUploadProgress: ({ percentage }) => onProgress?.(percentage),
+  });
+  refresh();
+  return radioLink(blob.url);
+};
+
 // ---------- start ----------
 if (password) { showLocked(false); refresh(); } else showLocked(true);

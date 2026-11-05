@@ -88,6 +88,31 @@
       </div>
     </section>
 
+    <!-- Volume booster -->
+    <section id="booster" class="card">
+      <h2>🔊 Volume booster</h2>
+      <p class="hint">Make an mp3 louder, up to 500%. Preview it, then download it or upload it to get a radio link. Above about 200% it starts to distort. The limiter keeps it loud with less crackling.</p>
+      <label class="dropzone" id="bo-drop">
+        <input id="bo-file" type="file" accept="audio/*,.mp3" hidden>
+        <span class="dz-icon">🎚️</span>
+        <span id="bo-name"><b>Choose an audio file</b> or drag it here</span>
+      </label>
+      <div id="bo-controls" class="bo-controls hidden">
+        <div class="bo-slider-row">
+          <label for="bo-gain">Boost</label>
+          <input id="bo-gain" type="range" min="100" max="500" step="10" value="200">
+          <output id="bo-gain-out">200%</output>
+        </div>
+        <label class="check"><input id="bo-limit" type="checkbox" checked> Limiter (less crackling)</label>
+        <div class="bc-actions">
+          <button id="bo-preview" class="btn">▶ Preview</button>
+          <button id="bo-download" class="btn btn-primary">⬇ Download boosted mp3</button>
+          <button id="bo-upload" class="btn">⬆ Upload &amp; copy radio link</button>
+          <span id="bo-status" class="hint"></span>
+        </div>
+      </div>
+    </section>
+
     <!-- Internet radio stations: one link that plays non-stop -->
     <section id="stations" class="card">
       <h2>📻 Non-stop radio stations</h2>
@@ -273,5 +298,6 @@
   <script src="stations.js"></script>
   <script src="broadcast.js"></script>
   <script type="module" src="uploads.js"></script>
+  <script type="module" src="booster.js"></script>
 </body>
 </html>
