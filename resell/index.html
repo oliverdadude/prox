@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Resell Profit Checker</title>
+  <meta name="description" content="Work out whether a product from Sainsbury's, Tesco and other shops will make a profit on Amazon UK after fees and VAT.">
+  <link rel="stylesheet" href="resell.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo">📦</span>
+      <div>
+        <h1>Resell Profit Checker</h1>
+        <p class="tagline">Buy in the shops, sell on Amazon UK. See if it's worth it before you spend.</p>
+      </div>
+    </div>
+    <button class="btn btn-ghost btn-small" id="settingsBtn" type="button">⚙️ Settings</button>
+  </header>
+
+  <main>
+    <!-- Settings -->
+    <section class="card hidden" id="settingsCard">
+      <h2>Your seller settings</h2>
+      <div class="grid">
+        <label class="check"><input type="checkbox" id="setVat"> I'm VAT-registered</label>
+        <label>Default fulfilment
+          <select id="setFulfil">
+            <option value="FBA">FBA (Amazon stores and ships it)</option>
+            <option value="FBM">FBM (I post it myself)</option>
+          </select>
+        </label>
+        <label>Target ROI (%) <input type="number" id="setRoi" min="0" step="1"></label>
+        <label>Minimum profit per item (£) <input type="number" id="setMinProfit" min="0" step="0.05"></label>
+        <label>FBM postage per order (£) <input type="number" id="setPostage" min="0" step="0.01"></label>
+        <label>FBA storage per unit (£) <input type="number" id="setStorage" min="0" step="0.01"></label>
+        <label>Monthly seller plan (£, before VAT) <input type="number" id="setPlan" min="0" step="0.01"></label>
+      </div>
+      <p class="hint">If you're not VAT-registered, Amazon adds 20% VAT to its fees and you can't claim it back. The tool allows for that.</p>
+    </section>
+
+    <!-- Calculator -->
+    <section class="card">
+      <h2 id="formTitle">Check a product</h2>
+      <form id="form" autocomplete="off">
+        <div class="grid">
+          <label class="wide">Product name
+            <input id="name" required placeholder="e.g. Yorkshire Tea 240 bags">
+          </label>
+          <label>Where you buy it
+            <select id="store"></select>
+          </label>
+          <label>Buy price each (£)
+            <input type="number" id="buy" min="0" step="0.01" required placeholder="2.50">
+          </label>
+          <label>How many
+            <input type="number" id="qty" min="1" step="1" value="1">
+          </label>
+          <label>Amazon selling price (£)
+            <input type="number" id="sell" min="0" step="0.01" required placeholder="9.99">
+          </label>
+          <label>Amazon category
+            <select id="cat"></select>
+          </label>
+          <label>VAT rate on the item
+            <select id="vat">
+              <option value="0">0% (most food, books, kids' clothes)</option>
+              <option value="0.05">5%</option>
+              <option value="0.2">20% (toiletries, sweets, crisps, soft drinks, most non-food)</option>
+            </select>
+          </label>
+          <label>Fulfilment
+            <select id="fulfil">
+              <option value="FBA">FBA</option>
+              <option value="FBM">FBM</option>
+            </select>
+          </label>
+          <label id="tierWrap">FBA size (packed)
+            <select id="tier"></select>
+          </label>
+          <label>Postage to Amazon per unit (£)
+            <input type="number" id="inbound" min="0" step="0.01" value="0.30">
+          </label>
+          <label>Prep / packaging per unit (£)
+            <input type="number" id="prep" min="0" step="0.01" value="0.10">
+          </label>
+          <details class="wide">
+            <summary>Override Amazon fees (copy them from Amazon's Revenue Calculator)</summary>
+            <div class="grid">
+              <label>Referral fee %
+                <input type="number" id="refOverride" min="0" step="0.1" placeholder="auto">
+              </label>
+              <label>FBA / postage fee (£)
+                <input type="number" id="fulfilOverride" min="0" step="0.01" placeholder="auto">
+              </label>
+            </div>
+          </details>
+          <label class="wide">Notes
+            <input id="notes" placeholder="e.g. Clubcard price, limit 3 per customer, BB date Jun 2027">
+          </label>
+        </div>
+
+        <div class="links" id="links"></div>
+
+        <div class="result" id="result">
+          <p class="muted">Fill in the buy price and the Amazon price to see your profit.</p>
+        </div>
+
+        <div class="row">
+          <button class="btn btn-primary" type="submit" id="saveBtn">＋ Save to my list</button>
+          <button class="btn btn-ghost hidden" type="button" id="cancelEdit">Cancel edit</button>
+          <button class="btn btn-ghost" type="reset" id="clearBtn">Clear</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- Summary + list -->
+    <section class="card">
+      <div class="row space">
+        <h2>My product list</h2>
+        <div class="row">
+          <select id="filter" class="btn-small">
+            <option value="all">All</option>
+            <option value="buy">✅ Worth buying</option>
+            <option value="idea">Ideas</option>
+            <option value="bought">Bought</option>
+            <option value="listed">Listed</option>
+            <option value="sold">Sold</option>
+          </select>
+          <button class="btn btn-small" type="button" id="exportBtn">⬇ CSV</button>
+          <label class="btn btn-small">⬆ Import<input type="file" id="importFile" accept=".csv,text/csv" hidden></label>
+        </div>
+      </div>
+      <div class="stats" id="stats"></div>
+      <div class="table-wrap">
+        <table id="table">
+          <thead>
+            <tr>
+              <th data-sort="name">Product</th>
+              <th data-sort="buy" class="num">Buy</th>
+              <th data-sort="sell" class="num">Sell</th>
+              <th data-sort="profit" class="num">Profit/unit</th>
+              <th data-sort="roi" class="num">ROI</th>
+              <th data-sort="total" class="num">Total profit</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+      <p class="muted empty" id="empty">No products yet. Check one above and save it.</p>
+    </section>
+
+    <!-- Checklist -->
+    <section class="card">
+      <h2>Before you buy: checklist</h2>
+      <ol class="checklist">
+        <li><strong>Can you sell in that category?</strong> On Amazon UK, Grocery &amp; Gourmet and many big brands are <em>gated</em> (they need approval). Amazon usually wants <em>wholesale invoices</em> for approval, and supermarket receipts are normally rejected. In Seller Central, search the product and check it says you can list it.</li>
+        <li><strong>Does it actually sell?</strong> Open the Keepa link. Look at sales rank (lower is better) and how many sell each month. A big profit on something that sells once a month ties up your money.</li>
+        <li><strong>Is Amazon itself the seller?</strong> If Amazon sells it, you'll rarely win the Buy Box. Count the other FBA sellers too.</li>
+        <li><strong>Use a price that holds.</strong> Use the usual Buy Box price, not a one-day spike. Keepa's 90-day average is a safer number.</li>
+        <li><strong>Check the dates.</strong> FBA needs dated items to have plenty of shelf life left when they arrive (usually at least 90 days). Clearance stock near its date won't be accepted.</li>
+        <li><strong>Match the listing exactly.</strong> Same size, same pack count, same variant. Multipacks and "bundles" have strict rules.</li>
+        <li><strong>Keep every receipt</strong> for your accounts and in case a brand complains.</li>
+      </ol>
+      <p class="hint">Fees here are estimates for Amazon UK. Amazon changes them, so before you buy in bulk, confirm with Amazon's own <a href="https://sellercentral.amazon.co.uk/revcal" target="_blank" rel="noopener">Revenue Calculator</a> and paste its figures into "Override Amazon fees".</p>
+    </section>
+  </main>
+
+  <footer class="foot">Everything is saved in this browser only.</footer>
+
+  <script src="resell.js"></script>
+</body>
+</html>
