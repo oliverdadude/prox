@@ -54,6 +54,10 @@
     {
       "source": "/p/:id.mp3",
       "destination": "/api/p?id=:id&fmt=mp3"
+    },
+    {
+      "source": "/r/:id.pls",
+      "destination": "/api/r?id=:id"
     }
   ]
 }

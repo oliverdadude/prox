@@ -48,6 +48,9 @@
   code { background:var(--panel2); border:1px solid var(--border); border-radius:6px; padding:2px 6px; font-size:13px; overflow-wrap:anywhere; }
   .toast { position:fixed; left:50%; bottom:22px; transform:translateX(-50%); background:var(--text); color:#000; padding:9px 16px; border-radius:99px; font-weight:600; opacity:0; transition:opacity .2s; pointer-events:none; }
   .toast.show { opacity:1; }
+  .modes { display:grid; gap:2px; margin-bottom:8px; }
+  .modes input { margin-top:3px; align-self:flex-start; }
+  body.free .icecast-only, body.icecast .free-only { display:none !important; }
   @media (max-width:720px) { .grid2, .fields { grid-template-columns:1fr; } .row { grid-template-columns:90px 1fr 56px; } }
 </style>
 </head>
@@ -68,6 +71,8 @@
       <div class="tile" id="micTile"><div class="k">Microphone</div><div class="v" id="micStatus">…</div></div>
       <div class="tile"><div class="k">On air for</div><div class="v" id="onair">—</div></div>
       <div class="tile"><div class="k">Announcements queued</div><div class="v" id="queued">0</div></div>
+      <div class="tile free-only"><div class="k">Listening now</div><div class="v" id="listeners">0</div></div>
+      <div class="tile free-only"><div class="k">Connection</div><div class="v" id="tunnel">Off</div></div>
     </div>
     <div class="err" id="error"></div>
   </section>
@@ -101,8 +106,13 @@
 
   <section class="card">
     <h2>📡 Station</h2>
-    <p class="hint" style="margin:0 0 12px">From your free station's encoder / broadcast settings (e.g. Zeno.fm). Saved on this PC only.</p>
-    <div class="fields">
+    <div class="modes">
+      <label class="check"><input type="radio" name="mode" value="free"> <span><b>Free, no account</b>: this app hosts the radio itself through a free Cloudflare tunnel</span></label>
+      <label class="check"><input type="radio" name="mode" value="icecast"> <span><b>My own station</b> (Zeno.fm or any Icecast server)</span></label>
+    </div>
+    <p class="hint free-only">Nothing to fill in. Click <b>Go live</b> and your permanent radio link appears below. It stays the same every time, even though your PC's address changes. Your PC must stay on and connected while people listen.</p>
+    <p class="hint icecast-only" style="margin:0 0 12px">From your station's encoder / broadcast settings. Saved on this PC only.</p>
+    <div class="fields icecast-only">
       <label class="f">Server address<input type="text" id="host" placeholder="link.zeno.fm" autocomplete="off"></label>
       <label class="f">Port<input type="number" id="port" min="1" max="65535"></label>
       <label class="f">Mount point<input type="text" id="mount" placeholder="/abc123" autocomplete="off"></label>
@@ -112,12 +122,12 @@
       <label class="f wide">Public stream URL (what listeners use)<input type="url" id="listenUrl" placeholder="https://stream.zeno.fm/abc123" autocomplete="off"></label>
     </div>
     <label class="check"><input type="checkbox" id="autoStart" data-key="autoStart"> Go live automatically when the app opens</label>
-    <div class="actions"><button id="saveStation" class="btn primary">Save station</button></div>
+    <div class="actions icecast-only"><button id="saveStation" class="btn primary">Save station</button></div>
   </section>
 
   <section class="card">
     <h2>🔗 Radio link for GMod</h2>
-    <p class="hint" style="margin:0 0 10px">Paste this into the car radio once. It keeps playing whatever you broadcast.</p>
+    <p class="hint" style="margin:0 0 10px">Paste this into the car radio once. It keeps playing whatever you broadcast, and stays the same every time you go live.</p>
     <div class="actions"><code id="radioLink">No link yet</code></div>
     <div class="actions">
       <button id="makeLink" class="btn primary">Make / copy radio link</button>
@@ -180,7 +190,11 @@ async function poll() {
     $('micTile').classList.toggle('bad', /no microphone/i.test(s.micStatus));
     $('onair').textContent = s.live ? fmtTime(s.onAirSeconds) : '—';
     $('queued').textContent = s.announcementsQueued;
-    $('error').textContent = s.lastError || '';
+    $('error').textContent = [s.lastError, s.mode === 'free' && /couldn't/i.test(s.stationStatus) ? s.stationStatus : ''].filter(Boolean).join(' · ');
+    document.body.className = s.mode;
+    for (const r of document.querySelectorAll('input[name=mode]')) r.checked = r.value === s.mode;
+    $('listeners').textContent = s.listeners >= 0 ? `${s.listeners} (peak ${s.peakListeners})` : '—';
+    $('tunnel').textContent = s.mode === 'free' ? (s.live ? 'Online' : s.tunnelStatus + (s.stationStatus && !s.live ? ' · ' + s.stationStatus : '')) : '';
     fillControls(d.config, d.voices);
   } catch { $('pill').textContent = 'App closed'; $('pill').className = 'pill'; }
 }
@@ -197,6 +211,9 @@ for (const el of document.querySelectorAll('[data-key]')) {
   el.addEventListener(el.type === 'range' ? 'input' : 'change', send);
 }
 
+for (const r of document.querySelectorAll('input[name=mode]')) {
+  r.addEventListener('change', () => post('/api/config', { mode: r.value }).then(poll).catch((e) => toast(e.message)));
+}
 $('liveBtn').onclick = () => post('/api/live', { on: !wantLive }).then(poll).catch((e) => toast(e.message));
 
 for (const id of ['host', 'port', 'mount', 'user', 'password', 'bitrate', 'listenUrl']) {

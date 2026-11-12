@@ -33,6 +33,7 @@ jobs:
           Copy-Item (Get-ChildItem ff -Recurse -Filter ffmpeg.exe | Select-Object -First 1).FullName out/ffmpeg.exe
           $lic = Get-ChildItem ff -Recurse -Filter 'LICENSE*' | Select-Object -First 1
           if ($lic) { Copy-Item $lic.FullName out/FFMPEG-LICENSE.txt }
+          Invoke-WebRequest https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe -OutFile out/cloudflared.exe
           Copy-Item relay-app/README.txt out/README.txt
           Get-ChildItem out
           Compress-Archive -Path out/* -DestinationPath RadioRelay.zip

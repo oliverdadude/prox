@@ -4,6 +4,12 @@ namespace RadioRelay;
 
 sealed class Config
 {
+    // "free": the app hosts the stream itself through a free Cloudflare tunnel (no account).
+    // "icecast": send to your own Icecast-compatible station (e.g. Zeno.fm).
+    public string Mode { get; set; } = "free";
+    public string StationId { get; set; } = "";   // permanent /r/<id>.pls link on the website
+    public string StationKey { get; set; } = "";  // secret that lets this PC update that link
+
     // Station (Icecast-compatible, e.g. Zeno.fm "encoder settings")
     public string Host { get; set; } = "";
     public int Port { get; set; } = 80;
@@ -46,5 +52,6 @@ sealed class Config
         File.WriteAllText(FilePath, JsonSerializer.Serialize(this, Json));
     }
 
-    public bool StationReady => Host != "" && Mount != "" && Password != "";
+    public bool Free => Mode != "icecast";
+    public bool StationReady => Free || (Host != "" && Mount != "" && Password != "");
 }

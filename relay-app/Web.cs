@@ -101,6 +101,12 @@ sealed class Web
 
     async Task MakeRadioLink(NetworkStream stream)
     {
+        if (_engine.Cfg.Free)
+        {
+            if (_engine.Cfg.RadioLink == "") { await SendJson(stream, new { error = "Click Go live first. Your link appears once you're online." }, 400); return; }
+            await SendJson(stream, new { link = _engine.Cfg.RadioLink });
+            return;
+        }
         var url = _engine.Cfg.ListenUrl.Trim();
         if (!url.StartsWith("http")) { await SendJson(stream, new { error = "Paste your station's public stream URL first." }, 400); return; }
         var res = await Http.GetAsync("https://gmod-radio-linker.vercel.app/api/short?url=" + Uri.EscapeDataString(url));
@@ -120,7 +126,7 @@ sealed class Web
         var c = _engine.Cfg;
         return new
         {
-            c.Host, c.Port, c.Mount, c.User, hasPassword = c.Password != "", c.Bitrate, c.ListenUrl, c.RadioLink,
+            c.Mode, c.Host, c.Port, c.Mount, c.User, hasPassword = c.Password != "", c.Bitrate, c.ListenUrl, c.RadioLink,
             c.PcAudio, c.Mic, c.Volume, c.MicVolume, c.BassDb, c.BassHz, c.SoftClip,
             c.Voice, c.VoiceRate, c.DuckTo, c.AutoStart,
         };
@@ -129,6 +135,7 @@ sealed class Web
     void ApplyConfig(string body)
     {
         var c = _engine.Cfg;
+        bool modeChanged = false;
         foreach (var p in JsonDocument.Parse(body).RootElement.EnumerateObject())
         {
             var v = p.Value;
@@ -152,9 +159,14 @@ sealed class Web
                 case "voiceRate": c.VoiceRate = Math.Clamp(v.GetInt32(), -10, 10); break;
                 case "duckTo": c.DuckTo = Math.Clamp(v.GetDouble(), 0, 1); break;
                 case "autoStart": c.AutoStart = v.GetBoolean(); break;
+                case "mode":
+                    var m = v.GetString() == "icecast" ? "icecast" : "free";
+                    if (m != c.Mode) { c.Mode = m; c.RadioLink = m == "free" && c.StationId != "" ? "https://gmod-radio-linker.vercel.app/r/" + c.StationId + ".pls" : ""; modeChanged = true; }
+                    break;
             }
         }
         c.Save();
+        if (modeChanged) _engine.Restart();
     }
 
     static string? _panel;
