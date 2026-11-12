@@ -251,3 +251,7 @@ dialog::backdrop { background: rgba(0,0,0,.6); }
 .bo-meter { height: 8px; background: var(--panel-2); border-radius: 99px; overflow: hidden; }
 #bo-meter-bar { height: 100%; width: 0; background: var(--accent); transition: width .06s linear; }
 #bo-meter-bar.clip { background: var(--danger); }
+.relay-callout { display: flex; gap: 14px; align-items: center; justify-content: space-between; flex-wrap: wrap;
+  margin-top: 12px; padding: 12px 14px; border: 1px solid var(--accent); border-radius: 12px; background: rgba(29,185,84,.07); }
+.relay-callout > div { flex: 1; min-width: 220px; }
+.relay-callout .hint { margin-top: 4px; }

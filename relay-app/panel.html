@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Radio Relay</title>
+<style>
+  :root { --bg:#0e1014; --panel:#171a20; --panel2:#1f232b; --border:#2b303a; --text:#e8ebf0; --muted:#8a92a2; --accent:#1db954; --warn:#f0b429; --bad:#e5534b; color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
+  header { display:flex; align-items:center; gap:12px; padding:14px 20px; border-bottom:1px solid var(--border); position:sticky; top:0; background:rgba(14,16,20,.94); backdrop-filter:blur(8px); z-index:2; }
+  header h1 { font-size:18px; margin:0; flex:1; }
+  .pill { padding:4px 10px; border-radius:99px; font-size:13px; font-weight:700; background:var(--panel2); color:var(--muted); }
+  .pill.live { background:rgba(29,185,84,.15); color:var(--accent); }
+  .pill.conn { background:rgba(240,180,41,.15); color:var(--warn); }
+  main { max-width:960px; margin:0 auto; padding:20px 16px 60px; display:grid; gap:16px; }
+  .card { background:var(--panel); border:1px solid var(--border); border-radius:14px; padding:18px; }
+  .card h2 { margin:0 0 12px; font-size:16px; }
+  .btn { appearance:none; border:1px solid var(--border); background:var(--panel2); color:var(--text); padding:9px 16px; border-radius:99px; font:inherit; font-weight:600; cursor:pointer; }
+  .btn:hover { border-color:#3b4250; }
+  .btn.primary { background:var(--accent); border-color:var(--accent); color:#06140b; }
+  .btn.danger { background:var(--bad); border-color:var(--bad); color:#fff; }
+  .btn:disabled { opacity:.5; cursor:default; }
+  .meter { height:14px; background:var(--panel2); border-radius:99px; overflow:hidden; }
+  .meter > div { height:100%; width:0; background:linear-gradient(90deg,var(--accent) 70%,var(--warn) 90%,var(--bad)); transition:width .1s linear; }
+  .meter-row { display:flex; justify-content:space-between; color:var(--muted); font-size:12px; margin-top:4px; }
+  .big { font-size:28px; font-weight:800; font-variant-numeric:tabular-nums; }
+  .tiles { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:10px; margin-top:14px; }
+  .tile { background:var(--panel2); border:1px solid var(--border); border-radius:10px; padding:10px 12px; }
+  .tile .k { color:var(--muted); font-size:12px; }
+  .tile .v { font-weight:700; margin-top:2px; overflow-wrap:anywhere; }
+  .tile.bad { border-color:var(--bad); } .tile.bad .v { color:var(--bad); }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  .row { display:grid; grid-template-columns:120px 1fr 64px; gap:12px; align-items:center; margin:10px 0; }
+  .row output { text-align:right; font-variant-numeric:tabular-nums; }
+  input[type=range] { width:100%; accent-color:var(--accent); }
+  .check { display:flex; align-items:center; gap:8px; margin:8px 0; cursor:pointer; }
+  .check input { width:18px; height:18px; accent-color:var(--accent); }
+  label.f { display:grid; gap:4px; font-size:13px; color:var(--muted); }
+  input[type=text], input[type=password], input[type=number], input[type=url], select, textarea {
+    width:100%; background:var(--bg); color:var(--text); border:1px solid var(--border); border-radius:10px; padding:9px 11px; font:inherit; }
+  textarea { resize:vertical; min-height:70px; }
+  .fields { display:grid; grid-template-columns:2fr 1fr; gap:10px; }
+  .fields .wide { grid-column:1 / -1; }
+  .actions { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:12px; }
+  .hint { color:var(--muted); font-size:13px; margin:6px 0 0; }
+  .err { color:var(--bad); font-size:13px; margin-top:8px; overflow-wrap:anywhere; }
+  code { background:var(--panel2); border:1px solid var(--border); border-radius:6px; padding:2px 6px; font-size:13px; overflow-wrap:anywhere; }
+  .toast { position:fixed; left:50%; bottom:22px; transform:translateX(-50%); background:var(--text); color:#000; padding:9px 16px; border-radius:99px; font-weight:600; opacity:0; transition:opacity .2s; pointer-events:none; }
+  .toast.show { opacity:1; }
+  @media (max-width:720px) { .grid2, .fields { grid-template-columns:1fr; } .row { grid-template-columns:90px 1fr 56px; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>📻 Radio Relay</h1>
+  <span id="pill" class="pill">Offline</span>
+  <button id="liveBtn" class="btn primary">Go live</button>
+</header>
+<main>
+  <section class="card">
+    <div class="big" id="db">-60 dB</div>
+    <div class="meter"><div id="meter"></div></div>
+    <div class="meter-row"><span>-60</span><span>-20</span><span>-6</span><span>0 dB</span></div>
+    <div class="tiles">
+      <div class="tile"><div class="k">Capturing</div><div class="v" id="mode">…</div></div>
+      <div class="tile"><div class="k">GMod</div><div class="v" id="gmod">…</div></div>
+      <div class="tile" id="micTile"><div class="k">Microphone</div><div class="v" id="micStatus">…</div></div>
+      <div class="tile"><div class="k">On air for</div><div class="v" id="onair">—</div></div>
+      <div class="tile"><div class="k">Announcements queued</div><div class="v" id="queued">0</div></div>
+    </div>
+    <div class="err" id="error"></div>
+  </section>
+
+  <div class="grid2">
+    <section class="card">
+      <h2>🎚️ Sound</h2>
+      <label class="check"><input type="checkbox" id="pcAudio" data-key="pcAudio"> PC audio (everything except GMod)</label>
+      <label class="check"><input type="checkbox" id="mic" data-key="mic"> Microphone</label>
+      <div class="row"><span>Volume</span><input type="range" id="volume" data-key="volume" min="0" max="5" step="0.05"><output id="volumeOut"></output></div>
+      <div class="row"><span>Mic volume</span><input type="range" id="micVolume" data-key="micVolume" min="0" max="5" step="0.05"><output id="micVolumeOut"></output></div>
+      <div class="row"><span>Bass</span><input type="range" id="bassDb" data-key="bassDb" min="0" max="24" step="1"><output id="bassDbOut"></output></div>
+      <div class="row"><span>Bass up to</span><input type="range" id="bassHz" data-key="bassHz" min="40" max="250" step="10"><output id="bassHzOut"></output></div>
+      <label class="check"><input type="checkbox" id="softClip" data-key="softClip"> Soft clip (smoother distortion when boosted)</label>
+      <p class="hint">Changes apply live. The stream never restarts.</p>
+    </section>
+
+    <section class="card">
+      <h2>🗣️ Announce</h2>
+      <textarea id="announceText" maxlength="500" placeholder="Type something to say over the radio…"></textarea>
+      <div class="actions">
+        <button id="sayBtn" class="btn primary">Speak</button>
+        <button id="stopSayBtn" class="btn">Stop speaking</button>
+      </div>
+      <label class="f" style="margin-top:12px">Voice<select id="voice" data-key="voice"></select></label>
+      <div class="row"><span>Speed</span><input type="range" id="voiceRate" data-key="voiceRate" min="-10" max="10" step="1"><output id="voiceRateOut"></output></div>
+      <div class="row"><span>Music while speaking</span><input type="range" id="duckTo" data-key="duckTo" min="0" max="1" step="0.05"><output id="duckToOut"></output></div>
+      <p class="hint">Uses the voices installed in Windows. Add more in Windows Settings → Time &amp; language → Speech.</p>
+    </section>
+  </div>
+
+  <section class="card">
+    <h2>📡 Station</h2>
+    <p class="hint" style="margin:0 0 12px">From your free station's encoder / broadcast settings (e.g. Zeno.fm). Saved on this PC only.</p>
+    <div class="fields">
+      <label class="f">Server address<input type="text" id="host" placeholder="link.zeno.fm" autocomplete="off"></label>
+      <label class="f">Port<input type="number" id="port" min="1" max="65535"></label>
+      <label class="f">Mount point<input type="text" id="mount" placeholder="/abc123" autocomplete="off"></label>
+      <label class="f">Username<input type="text" id="user" autocomplete="off"></label>
+      <label class="f">Password<input type="password" id="password" autocomplete="new-password" placeholder="••••••"></label>
+      <label class="f">Quality<select id="bitrate"><option value="96">96 kbps</option><option value="128">128 kbps</option><option value="192">192 kbps</option></select></label>
+      <label class="f wide">Public stream URL (what listeners use)<input type="url" id="listenUrl" placeholder="https://stream.zeno.fm/abc123" autocomplete="off"></label>
+    </div>
+    <label class="check"><input type="checkbox" id="autoStart" data-key="autoStart"> Go live automatically when the app opens</label>
+    <div class="actions"><button id="saveStation" class="btn primary">Save station</button></div>
+  </section>
+
+  <section class="card">
+    <h2>🔗 Radio link for GMod</h2>
+    <p class="hint" style="margin:0 0 10px">Paste this into the car radio once. It keeps playing whatever you broadcast.</p>
+    <div class="actions"><code id="radioLink">No link yet</code></div>
+    <div class="actions">
+      <button id="makeLink" class="btn primary">Make / copy radio link</button>
+    </div>
+  </section>
+</main>
+<div id="toast" class="toast"></div>
+<script>
+const $ = (id) => document.getElementById(id);
+let cfg = null, wantLive = false, editingStation = false;
+
+function toast(t) { const el = $('toast'); el.textContent = t; el.classList.add('show'); clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove('show'), 2200); }
+async function post(path, body) {
+  const r = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Relay': '1' }, body: JSON.stringify(body || {}) });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(d.error || 'Request failed');
+  return d;
+}
+const fmtTime = (s) => { const h = Math.floor(s / 3600), m = Math.floor(s / 60) % 60; return h ? `${h}h ${m}m` : `${m}m ${s % 60}s`; };
+const labels = {
+  volume: (v) => `${Math.round(v * 100)}%`, micVolume: (v) => `${Math.round(v * 100)}%`,
+  bassDb: (v) => `+${v} dB`, bassHz: (v) => `${v} Hz`, voiceRate: (v) => (v > 0 ? `+${v}` : `${v}`), duckTo: (v) => `${Math.round(v * 100)}%`,
+};
+
+function fillControls(c, voices) {
+  for (const el of document.querySelectorAll('[data-key]')) {
+    const k = el.dataset.key;
+    if (document.activeElement === el) continue;
+    if (el.type === 'checkbox') el.checked = !!c[k];
+    else if (el.tagName === 'SELECT' && k === 'voice') {
+      if (el.options.length !== voices.length + 1) {
+        el.innerHTML = '<option value="">Windows default</option>' + voices.map((v) => `<option>${v.replace(/</g, '&lt;')}</option>`).join('');
+      }
+      el.value = c.voice || '';
+    } else el.value = c[k];
+    if ($(k + 'Out')) $(k + 'Out').textContent = labels[k](Number(el.value));
+  }
+  if (!editingStation) {
+    $('host').value = c.host; $('port').value = c.port; $('mount').value = c.mount; $('user').value = c.user;
+    $('bitrate').value = String(c.bitrate); $('listenUrl').value = c.listenUrl;
+    $('password').placeholder = c.hasPassword ? '•••••• (saved)' : 'password';
+  }
+  $('radioLink').textContent = c.radioLink || 'No link yet';
+}
+
+async function poll() {
+  try {
+    const d = await (await fetch('/api/status')).json();
+    const s = d.status;
+    cfg = d.config; wantLive = s.wantLive;
+    $('pill').textContent = s.live ? '● Live' : s.connecting ? 'Connecting…' : 'Offline';
+    $('pill').className = 'pill' + (s.live ? ' live' : s.connecting ? ' conn' : '');
+    $('liveBtn').textContent = s.wantLive ? 'Stop' : 'Go live';
+    $('liveBtn').className = 'btn ' + (s.wantLive ? 'danger' : 'primary');
+    $('db').textContent = `${s.peakDb.toFixed(1)} dB`;
+    $('meter').style.width = `${Math.max(0, (s.peakDb + 60) / 60 * 100)}%`;
+    $('mode').textContent = s.captureMode;
+    $('gmod').textContent = s.gmodRunning ? 'Running (left out)' : 'Not running';
+    $('micStatus').textContent = s.micStatus;
+    $('micTile').classList.toggle('bad', /no microphone/i.test(s.micStatus));
+    $('onair').textContent = s.live ? fmtTime(s.onAirSeconds) : '—';
+    $('queued').textContent = s.announcementsQueued;
+    $('error').textContent = s.lastError || '';
+    fillControls(d.config, d.voices);
+  } catch { $('pill').textContent = 'App closed'; $('pill').className = 'pill'; }
+}
+
+// live sliders / toggles
+for (const el of document.querySelectorAll('[data-key]')) {
+  const send = () => {
+    const k = el.dataset.key;
+    let v = el.type === 'checkbox' ? el.checked : el.tagName === 'SELECT' ? el.value : Number(el.value);
+    if (k === 'voiceRate') v = Math.round(v);
+    if ($(k + 'Out')) $(k + 'Out').textContent = labels[k](Number(el.value));
+    post('/api/config', { [k]: v }).catch((e) => toast(e.message));
+  };
+  el.addEventListener(el.type === 'range' ? 'input' : 'change', send);
+}
+
+$('liveBtn').onclick = () => post('/api/live', { on: !wantLive }).then(poll).catch((e) => toast(e.message));
+
+for (const id of ['host', 'port', 'mount', 'user', 'password', 'bitrate', 'listenUrl']) {
+  $(id).addEventListener('focus', () => { editingStation = true; });
+}
+$('saveStation').onclick = async () => {
+  try {
+    await post('/api/config', {
+      host: $('host').value, port: Number($('port').value) || 80, mount: $('mount').value, user: $('user').value || 'source',
+      password: $('password').value, bitrate: Number($('bitrate').value), listenUrl: $('listenUrl').value,
+    });
+    $('password').value = ''; editingStation = false; toast('Station saved'); poll();
+  } catch (e) { toast(e.message); }
+};
+
+$('sayBtn').onclick = async () => {
+  const text = $('announceText').value.trim();
+  if (!text) return;
+  $('sayBtn').disabled = true;
+  try { await post('/api/announce', { text }); $('announceText').value = ''; } catch (e) { toast(e.message); }
+  $('sayBtn').disabled = false;
+};
+$('announceText').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); $('sayBtn').click(); } });
+$('stopSayBtn').onclick = () => post('/api/announce/stop').catch((e) => toast(e.message));
+
+$('makeLink').onclick = async () => {
+  try {
+    const link = cfg?.radioLink || (await post('/api/radiolink')).link;
+    $('radioLink').textContent = link;
+    await navigator.clipboard.writeText(link).then(() => toast('Radio link copied 📻'), () => toast('Select the link and copy it'));
+  } catch (e) { toast(e.message); }
+};
+
+poll();
+setInterval(poll, 500);
+</script>
+</body>
+</html>

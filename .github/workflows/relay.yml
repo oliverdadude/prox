@@ -1,0 +1,51 @@
+name: Build Radio Relay
+
+on:
+  push:
+    branches: [claude/optimistic-ramanujan-vumtuy]
+    paths: ['relay-app/**', '.github/workflows/relay.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Build RadioRelay.exe
+        run: >
+          dotnet publish relay-app/RadioRelay.csproj -c Release -r win-x64 --self-contained true
+          -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
+          -p:EnableCompressionInSingleFile=true -p:DebugType=none -o out
+
+      - name: Add ffmpeg and readme, zip it
+        shell: pwsh
+        run: |
+          Invoke-WebRequest https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip -OutFile ff.zip
+          Expand-Archive ff.zip -DestinationPath ff
+          Copy-Item (Get-ChildItem ff -Recurse -Filter ffmpeg.exe | Select-Object -First 1).FullName out/ffmpeg.exe
+          $lic = Get-ChildItem ff -Recurse -Filter 'LICENSE*' | Select-Object -First 1
+          if ($lic) { Copy-Item $lic.FullName out/FFMPEG-LICENSE.txt }
+          Copy-Item relay-app/README.txt out/README.txt
+          Get-ChildItem out
+          Compress-Archive -Path out/* -DestinationPath RadioRelay.zip
+          "{0:N1} MB" -f ((Get-Item RadioRelay.zip).Length / 1MB)
+
+      - name: Publish download
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: relay-latest
+          target_commitish: ${{ github.sha }}
+          name: Radio Relay (latest build)
+          prerelease: true
+          files: RadioRelay.zip
+          body: |
+            Download **RadioRelay.zip**, unzip it, and double-click RadioRelay.exe.
+            See README.txt inside for setup. Built from ${{ github.sha }}.
