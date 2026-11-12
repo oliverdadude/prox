@@ -5,26 +5,49 @@ using System.Threading.Channels;
 
 namespace RadioRelay;
 
-/// <summary>Fans the live MP3 out to every connected listener.</summary>
+/// <summary>
+/// Fans the live MP3 out to every connected listener. A listener that falls more than
+/// ~3 seconds behind (slow connection, hiccup) is skipped forward to live instead of
+/// building up an ever-growing delay.
+/// </summary>
 sealed class StreamHub
 {
-    readonly object _lock = new();
-    readonly List<Channel<byte[]>> _clients = new();
-    public int Peak { get; private set; }
-    public int Listeners { get { lock (_lock) return _clients.Count; } }
-
-    public Channel<byte[]> Join()
+    public sealed class Client
     {
-        var ch = Channel.CreateBounded<byte[]>(new BoundedChannelOptions(512) { FullMode = BoundedChannelFullMode.DropOldest });
-        lock (_lock) { _clients.Add(ch); Peak = Math.Max(Peak, _clients.Count); }
-        return ch;
+        public readonly Channel<byte[]> Queue = Channel.CreateUnbounded<byte[]>(new UnboundedChannelOptions { SingleReader = true });
+        public long QueuedBytes;
     }
 
-    public void Leave(Channel<byte[]> ch) { lock (_lock) _clients.Remove(ch); }
+    readonly object _lock = new();
+    readonly List<Client> _clients = new();
+    public int Peak { get; private set; }
+    public int Listeners { get { lock (_lock) return _clients.Count; } }
+    /// <summary>Max audio a listener may lag behind, in bytes (set from the bitrate).</summary>
+    public long MaxLagBytes { get; set; } = 128_000 / 8 * 3;
+
+    public Client Join()
+    {
+        var c = new Client();
+        lock (_lock) { _clients.Add(c); Peak = Math.Max(Peak, _clients.Count); }
+        return c;
+    }
+
+    public void Leave(Client c) { lock (_lock) _clients.Remove(c); }
 
     public void Publish(byte[] data)
     {
-        lock (_lock) foreach (var c in _clients) c.Writer.TryWrite(data);
+        lock (_lock)
+        {
+            foreach (var c in _clients)
+            {
+                if (Interlocked.Read(ref c.QueuedBytes) > MaxLagBytes)
+                {
+                    // too far behind: throw away the backlog so they jump back to live
+                    while (c.Queue.Reader.TryRead(out var old)) Interlocked.Add(ref c.QueuedBytes, -old.Length);
+                }
+                if (c.Queue.Writer.TryWrite(data)) Interlocked.Add(ref c.QueuedBytes, data.Length);
+            }
+        }
     }
 }
 
@@ -94,16 +117,17 @@ sealed class StreamServer
                            "icy-name: Radio Relay\r\nAccess-Control-Allow-Origin: *\r\nConnection: close\r\n\r\n");
             if (method == "HEAD") return;
 
-            var ch = _hub.Join();
+            var listener = _hub.Join();
             try
             {
-                await foreach (var chunk in ch.Reader.ReadAllAsync())
+                await foreach (var chunk in listener.Queue.Reader.ReadAllAsync())
                 {
+                    Interlocked.Add(ref listener.QueuedBytes, -chunk.Length);
                     if (!_isLive()) break;
                     await s.WriteAsync(chunk);
                 }
             }
-            finally { _hub.Leave(ch); }
+            finally { _hub.Leave(listener); }
         }
         catch { /* listener went away */ }
     }

@@ -209,11 +209,11 @@ sealed class Engine : IDisposable
     static void ReadSource(ISampleProvider? samples, BufferedWaveProvider? buffer, float[] dest, int count)
     {
         if (samples == null || buffer == null) { Array.Clear(dest, 0, count); return; }
-        // keep latency low: if more than 300 ms has piled up, drop the oldest audio
-        int max = buffer.WaveFormat.AverageBytesPerSecond * 3 / 10;
+        // keep latency low: if more than 150 ms has piled up, drop the oldest audio
+        int max = buffer.WaveFormat.AverageBytesPerSecond * 15 / 100;
         if (buffer.BufferedBytes > max)
         {
-            int drop = buffer.BufferedBytes - buffer.WaveFormat.AverageBytesPerSecond / 10;
+            int drop = buffer.BufferedBytes - buffer.WaveFormat.AverageBytesPerSecond * 6 / 100;
             drop -= drop % buffer.WaveFormat.BlockAlign;
             buffer.Read(new byte[drop], 0, drop);
         }
@@ -333,6 +333,7 @@ sealed class Engine : IDisposable
         p.BeginErrorReadLine();
         _ffmpeg = p;
         _ffIn = p.StandardInput.BaseStream;
+        Hub.MaxLagBytes = Math.Clamp(Cfg.Bitrate, 64, 320) * 1000L / 8 * 3;
         if (Cfg.Free)
         {
             var output = p.StandardOutput.BaseStream;
